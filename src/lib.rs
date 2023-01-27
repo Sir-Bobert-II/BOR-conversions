@@ -34,7 +34,7 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
         })
         .create_option(|option| {
             option
-                .name("Hours")
+                .name("hours")
                 .kind(CommandOptionType::SubCommand)
                 .description("Some people don't know how to subtract by '12'.")
                 .create_sub_option(|option| {
