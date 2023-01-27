@@ -406,7 +406,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "leb-conversions"
+name = "leb_conversions"
 version = "0.1.0"
 dependencies = [
  "serenity",
