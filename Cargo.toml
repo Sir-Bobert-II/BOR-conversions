@@ -1,5 +1,5 @@
 [package]
-name = "leb_conversions"
+name = "bor_conversions"
 version = "0.1.0"
 edition = "2021"
 
