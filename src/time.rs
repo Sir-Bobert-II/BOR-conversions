@@ -14,7 +14,7 @@ pub fn run(t: String) -> String
     }
 }
 
-#[derive(Debug, Default,Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
 pub enum TimeNotation
 {
     TwelveHour,
@@ -33,12 +33,17 @@ pub struct Time
 }
 
 #[derive(Debug)]
-pub struct ParseTimeError { message: String}
+pub struct ParseTimeError
+{
+    message: String,
+}
 
-impl FromStr for Time {
+impl FromStr for Time
+{
     type Err = ParseTimeError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err>
+    {
         let mut s = s.to_lowercase();
         let mut kind = TimeNotation::TwentyFourHour;
         let mut pm = false;
@@ -47,11 +52,12 @@ impl FromStr for Time {
         {
             s = match s.strip_suffix("pm")
             {
-                Some(x) => {
+                Some(x) =>
+                {
                     kind = TimeNotation::TwelveHour;
                     pm = true;
                     x.to_string()
-                },
+                }
                 None => s,
             }
         }
@@ -59,40 +65,40 @@ impl FromStr for Time {
         {
             s = match s.strip_suffix("am")
             {
-                Some(x) => {
+                Some(x) =>
+                {
                     kind = TimeNotation::TwelveHour;
                     x.to_string()
-                },
+                }
                 None => s,
             }
         }
-        
-        let sections:Vec<&str> = s.split(':').collect();
+
+        let sections: Vec<&str> = s.split(':').collect();
         match sections.len()
         {
-           
-            1 | 2 | 3 => {
+            1 | 2 | 3 =>
+            {
                 let mut i = 0;
                 let mut time = Self::new(kind);
                 while i < sections.len()
                 {
-            
                     match sections[i].trim().parse()
                     {
-                        Ok(x) =>
+                        Ok(x) => match i
                         {
-                            match i
+                            0 =>
                             {
-                                0 => time.hours = {
+                                time.hours = {
                                     if kind == TimeNotation::TwelveHour
                                     {
-                                        if pm && x != 12
-                                        {
-                                            x + 12
-                                        }
-                                        else if !pm && x == 12
+                                        if !pm && x == 12
                                         {
                                             x - 12
+                                        }
+                                        else if pm && x < 12
+                                        {
+                                            x + 12
                                         }
                                         else
                                         {
@@ -103,57 +109,68 @@ impl FromStr for Time {
                                     {
                                         x
                                     }
-                                },
-                                1 => time.minutes = x,
-                                2 => time.seconds = x,
-                                _=> (),
+                                }
                             }
+                            1 => time.minutes = x,
+                            2 => time.seconds = x,
+                            _ => (),
+                        },
+                        Err(message) =>
+                        {
+                            return Err(Self::Err {
+                                message: format!("{message} {}", sections[i]),
+                            })
                         }
-                        Err(message) => return Err(Self::Err {message: format!("{message} {}",  sections[i])}),
                     }
-                    i+=1;
+                    i += 1;
                 }
                 Ok(time)
             }
-            _=> Err(Self::Err {message: "Too many sections!".to_string()}),
+            _ => Err(Self::Err {
+                message: "Too many sections!".to_string(),
+            }),
         }
-
     }
 }
 
 impl std::fmt::Display for Time
 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+    {
         match self.kind
         {
-            TimeNotation::TwelveHour => 
+            TimeNotation::TwelveHour =>
             {
-                let (period, hours) = if self.hours == 24
+                let (period, hours) = if self.hours == 0 || self.hours == 24
                 {
                     ("AM", 12)
                 }
                 else if self.hours > 12
                 {
-                    // We subtract twelve because we added twelve when parsing it;
-                    // We turn it from 24hour to twelve hour notation
                     ("PM", self.hours - 12)
                 }
-                else if self.hours == 0
+                else if self.hours == 12
                 {
-                    ("AM", 12)
+                    ("PM", self.hours)
                 }
                 else
                 {
                     ("AM", self.hours)
                 };
-                
-                write!(f, "{hours:02}:{:02}:{:02} {period}", self.minutes, self.seconds)
-                
+
+                write!(
+                    f,
+                    "{hours:02}:{:02}:{:02} {period}",
+                    self.minutes, self.seconds
+                )
             }
             TimeNotation::TwentyFourHour =>
             {
-                
-                write!(f, "{:02}:{:02}:{:02}", self.hours,self.minutes, self.seconds)
+                write!(
+                    f,
+                    "{:02}:{:02}:{:02}",
+                    self.hours, self.minutes, self.seconds
+                )
             }
         }
     }
@@ -186,7 +203,7 @@ impl Time
         match self.kind
         {
             TimeNotation::TwentyFourHour => self.to_12(),
-            _=> self.to_24(),
+            _ => self.to_24(),
         }
     }
 }
@@ -296,7 +313,7 @@ pub mod test
 
         assert_eq!(test, time);
     }
-    
+
     #[test]
     fn test_convert_12h_to_24h_pm()
     {
