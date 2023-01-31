@@ -1,85 +1,175 @@
+pub fn run(input: &str, target: &str) -> String
+{
+    let mut temp = match Temperature::from_str(input)
+    {
+        Ok(x)=>x,
+        Err(e) => return format!("{}", e.message),
+    };
+    let original = temp;
+    match &*target.to_lowercase()
+    {
+        "k" | "kelvin"| "kel" => temp.to_kel(),
+        "c" | "celsius" | "cel" => temp.to_cel(),
+        "f" | "fahrenheit"| "fah" => temp.to_fah(),
+        _=> return "A valid target couldn't be found".to_string()
+    };
+    
+    format!("{original} -> {temp}")
+}
+
+use std::{fmt, str::FromStr};
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-enum Temperature
+struct Temperature
 {
-    Kelvin(f64),
-    Celsius(f64),
-    Fahrenheit(f64),
+    temp: f64,
+    kind: TemperatureUnit
 }
 
-impl From<Temperature> for f64
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+enum TemperatureUnit
 {
-    fn from(item: Temperature) -> Self
+    Kelvin,
+    Celsius,
+    Fahrenheit,
+}
+
+#[derive(Debug)]
+pub struct ParseTempError{ pub message: String}
+
+impl FromStr for Temperature
+{
+    type Err = ParseTempError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err>
     {
-        match item
+        let mut s = s.to_lowercase();
+        let kind;
+        s = match s
         {
-            Temperature::Kelvin(x) => x,
-            Temperature::Celsius(x) => x,
-            Temperature::Fahrenheit(x) => x,
-        }
+            _ if s.ends_with("c") || s.ends_with("celsius") || s.ends_with("cel")=> 
+            {
+                kind = TemperatureUnit::Celsius;
+                match s.strip_suffix("c")
+                {
+                    Some(x) => x.to_string(),
+                    None =>
+                    {
+                        match s.strip_suffix("celsius")
+                        {
+                            Some(x) => x.to_string(),
+                            None => match s.strip_suffix("cel")
+                            {
+                                Some(x) => x.to_string(),
+                                None => s,
+                            },
+                        }
+                    },
+                }
+            }
+            
+            _ if s.ends_with("f") || s.ends_with("fahrenheit") || s.ends_with("fah")=> 
+            {
+                kind = TemperatureUnit::Fahrenheit;
+                match s.strip_suffix("f")
+                {
+                    Some(x) => x.to_string(),
+                    None =>
+                    {
+                        match s.strip_suffix("fahrenheit")
+                        {
+                            Some(x) => x.to_string(),
+                            None => match s.strip_suffix("fah")
+                            {
+                                Some(x) => x.to_string(),
+                                None => s,
+                            },
+                        }
+                    },
+                }
+            }
+
+            _ if s.ends_with("k") || s.ends_with("kelvin")=> 
+            {
+                kind = TemperatureUnit::Kelvin;
+                match s.strip_suffix("k")
+                {
+                    Some(x) => x.to_string(),
+                    None =>
+                    {
+                        match s.strip_suffix("kelvin")
+                        {
+                            Some(x) => x.to_string(),
+                            None => match s.strip_suffix("kel")
+                            {
+                                Some(x) => x.to_string(),
+                                None => s,
+                            },
+                        }
+                    },
+                }
+            }
+
+            _=> return Err(Self::Err {message: "A viable unit hasn't been found".to_string()}),
+        };
+
+        Ok(Self {
+            kind,
+            temp: match s.trim().parse() {
+                Ok(x)=> match kind 
+                {
+                    TemperatureUnit::Kelvin => x,
+                    TemperatureUnit::Celsius => x + 273.15,
+                    TemperatureUnit::Fahrenheit => (x - 32.0) * 5.0/9.0 + 273.15,
+                }
+                Err(e) => return Err(Self::Err {message: e.to_string()})
+            }
+        })
     }
 }
 
-impl Temperature
+impl std::fmt::Display for Temperature
 {
-    pub fn fah(&self) -> Temperature
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
     {
-        match *self
+        let (temp, unit) = match self.kind
         {
-            Self::Kelvin(x) => Self::Fahrenheit((1.8 * (x - 273.15)) + 32.0),
-            Self::Celsius(x) => Self::Fahrenheit(x * 1.8 + 32.0),
-            Self::Fahrenheit(x) => Self::Fahrenheit(x),
-        }
-    }
-    pub fn cel(&self) -> Temperature
-    {
-        match *self
+            TemperatureUnit::Kelvin => (self.temp, "Kelvin"),
+            TemperatureUnit::Celsius => (self.temp - 273.15, "Celsius"),
+            TemperatureUnit::Fahrenheit => ((self.temp - 273.15) * 9.0/5.0 + 32.0, "Fahrenheit"),
+        };
+        
+        let mut m = format!("{temp:.3}");
+        if m != "0.000".to_string()
         {
-            Self::Kelvin(x) => Self::Celsius(x - 273.15),
-            Self::Fahrenheit(x) => Self::Celsius((x - 32.0) / 1.8),
-            Self::Celsius(x) => Self::Celsius(x),
+            m = m.trim_end_matches(['.', '0']).to_string();
         }
-    }
-    pub fn kel(&self) -> Temperature
-    {
-        match *self
+        else
         {
-            Self::Fahrenheit(x) => Self::Kelvin(((x - 32.0) / 1.8) + 273.15),
-            Self::Celsius(x) => Self::Kelvin(x + 273.15),
-            Self::Kelvin(x) => Self::Kelvin(x),
+            m = "0".to_string();
         }
+
+        write!(f, "{m} {unit}")
     }
 }
 
-pub fn run(value: String, target: char) -> String
-{
-    let mut value = value;
-    let last = value.clone().chars().last().unwrap();
+impl Temperature{
 
-    value.pop();
-
-    let conval: Temperature = match last
+    pub fn to_cel(&mut self)-> &mut Self
     {
-        'C' | 'c' => Temperature::Celsius(value.parse().unwrap_or(0.0)),
-
-        'F' | 'f' => Temperature::Fahrenheit(value.parse().unwrap_or(0.0)),
-
-        'K' | 'k' => Temperature::Kelvin(value.parse().unwrap_or(0.0)),
-
-        _ => return "Error: No viable unit specified".to_string(),
-    };
-
-    let ret: f64 = match target
-    {
-        'F' | 'f' => f64::from(conval.fah()),
-        'C' | 'c' => f64::from(conval.cel()),
-        'K' | 'k' => f64::from(conval.kel()),
-        _ => return "Error: No viable target specified".to_string(),
-    };
-
-    if f64::from(conval) == 0.0
-    {
-        return "Error: not a parseable number!".to_string();
+        self.kind = TemperatureUnit::Celsius;
+        self
     }
-
-    format!("{ret:.1}{target}")
+    
+    pub fn to_kel(&mut self)-> &mut Self
+    {
+        self.kind = TemperatureUnit::Kelvin;
+        self
+    }
+    
+    pub fn to_fah(&mut self)-> &mut Self
+    {
+        self.kind = TemperatureUnit::Fahrenheit;
+        self
+    }
 }
