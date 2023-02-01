@@ -10,3 +10,4 @@ serenity = { default-features = false, features = ["client", "gateway", "model",
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "*"
+thiserror = "1.0"

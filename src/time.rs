@@ -1,3 +1,4 @@
+use thiserror::Error;
 use std::{fmt, str::FromStr};
 
 pub fn run(t: String) -> String
@@ -32,10 +33,15 @@ pub struct Time
     seconds: u8,
 }
 
-#[derive(Debug)]
-pub struct ParseTimeError
+
+#[derive(Error, Debug)]
+pub enum ParseTimeError
 {
-    message: String,
+    #[error("Couldn't parse number: {0}")]
+    NumberParseError(String),
+
+    #[error("There were too many sections in the time provided")]
+    TooManySections,
 }
 
 impl FromStr for Time
@@ -115,20 +121,16 @@ impl FromStr for Time
                             2 => time.seconds = x,
                             _ => (),
                         },
-                        Err(message) =>
+                        Err(e) =>
                         {
-                            return Err(Self::Err {
-                                message: format!("{message} {}", sections[i]),
-                            })
+                            return Err(Self::Err::NumberParseError(format!("{e}: '{}'", sections[i].trim())))
                         }
                     }
                     i += 1;
                 }
                 Ok(time)
             }
-            _ => Err(Self::Err {
-                message: "Too many sections!".to_string(),
-            }),
+            _ => Err(Self::Err::TooManySections),
         }
     }
 }
