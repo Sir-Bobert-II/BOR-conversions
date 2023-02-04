@@ -1,11 +1,11 @@
-use thiserror::Error;
 use std::{fmt, str::FromStr};
+use thiserror::Error;
 
 pub fn run(t: String) -> String
 {
     if let Ok(mut time) = Time::from_str(&t)
     {
-        let original = time.clone();
+        let original = time;
         let opposite = *time.to_opposite();
         format!("{original} -> {opposite}")
     }
@@ -32,7 +32,6 @@ pub struct Time
     minutes: u8,
     seconds: u8,
 }
-
 
 #[derive(Error, Debug)]
 pub enum ParseTimeError
@@ -123,7 +122,10 @@ impl FromStr for Time
                         },
                         Err(e) =>
                         {
-                            return Err(Self::Err::NumberParseError(format!("{e}: '{}'", sections[i].trim())))
+                            return Err(Self::Err::NumberParseError(format!(
+                                "{e}: '{}'",
+                                sections[i].trim()
+                            )))
                         }
                     }
                     i += 1;
