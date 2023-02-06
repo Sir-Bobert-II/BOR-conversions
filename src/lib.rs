@@ -6,6 +6,9 @@ pub mod temperature;
 /// Conversions between 12 and 24 hour time
 pub mod time;
 
+/// Currency conversion
+pub mod currency;
+
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand
 {
     command
