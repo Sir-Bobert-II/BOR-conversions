@@ -120,17 +120,7 @@ impl std::fmt::Display for Temperature
             TemperatureUnit::Fahrenheit => ((self.temp - 273.15) * 9.0 / 5.0 + 32.0, "Fahrenheit"),
         };
 
-        let mut m = &*format!("{temp:.3}");
-        if m != "0.000"
-        {
-            m = m.trim_end_matches(['.', '0']);
-        }
-        else
-        {
-            m = "0";
-        }
-
-        write!(f, "{m} {unit}")
+        write!(f, "{temp:.2} {unit}")
     }
 }
 
