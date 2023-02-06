@@ -7,7 +7,7 @@ use serde_derive::{Serialize, Deserialize};
 
 lazy_static! {
     static ref EXCHANGE_RATES: Mutex<ExchangeRates>  = Mutex::new({
-        ExchangeRates::fetch("KOZFwJVNUqxh8e4kXaLURtK6aaXWQIgifZnFAuxQ".to_string()).unwrap()
+        ExchangeRates::fetch("".to_string()).unwrap()
     });
 }
 
@@ -181,8 +181,8 @@ impl FromStr for Currency
 
     fn from_str(s: &str) -> Result<Self, Self::Err>
     {
-        let mut s = s.to_lowercase();
-
+        let mut s = s.to_lowercase().to_string();
+        let kind;
         match s {
             _ if s.ends_with("usd") || s.ends_with("dollar") || s.starts_with('$') => {
                 s = match s.strip_suffix("usd")
@@ -191,15 +191,16 @@ impl FromStr for Currency
                     None => match s.strip_suffix("dollar")
                     {
                         Some(s) => s,
-                        None => s,
+                        None => &s,
                     }
-                }
+                }.to_string();
                 
                 s = match s.strip_prefix('$')
                 {
                     Some(s) => s,
                     None => s,
-                }
+                }.to_string();
+                kind = CurrencyType::Usd;
             },
             _ if s.ends_with("eur") || s.ends_with("euro") || s.starts_with('€') => (),
             _ if s.ends_with("rub") || s.ends_with("ruble") => (),
@@ -207,6 +208,7 @@ impl FromStr for Currency
             _ if s.ends_with("cad") => (),
             _ if s.ends_with("aud") => (),
             _=>(),
+            
             
         };
 
