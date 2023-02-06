@@ -9,6 +9,19 @@ pub mod time;
 /// Currency conversion
 pub mod currency;
 
+fn strip_suffixes(mut input: String, suffixes: &[&str]) -> String
+{
+    for suffix in suffixes
+    {
+        input = match input.strip_suffix(suffix)
+        {
+            Some(input) => input,
+            None => &input,
+        }.to_string()
+    }
+    input
+}
+
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand
 {
     command
