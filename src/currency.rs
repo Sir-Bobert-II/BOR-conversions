@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc, Duration};
 use serde_derive::{Serialize, Deserialize};
 use super::strip_suffixes;
 
-pub fn run(input: String, target: String, api_key: String) -> String
+pub fn run(input: String, target: String, api_key: String, max_age: Duration) -> String
 {
     let converter = match CurrencyConverter::new(api_key)
     {
@@ -12,16 +12,25 @@ pub fn run(input: String, target: String, api_key: String) -> String
         Err(e) => return e.to_string(),
     };
 
-    let value = match Currency::from_str(Rc::clone(converter))
+    let mut value = match Currency::from_str(&input,Rc::clone(&converter), max_age)
     {
         Ok(x) => x,
         Err(e) => return e.to_string(),
     };
 
-    match target
+    match &*target.to_lowercase()
     {
-        
+        "$" | "usd" | "dollar" => value.into_currency(CurrencyType::Usd),
+        "€" | "eur" | "euro" => value.into_currency(CurrencyType::Eur),
+        "cad" => value.into_currency(CurrencyType::Cad),
+        "rub" | "ruble" => value.into_currency(CurrencyType::Rub),
+        "yen" | "jpy" => value.into_currency(CurrencyType::Jpy),
+        "aud" => value.into_currency(CurrencyType::Aud),
+        "amd" | "dram" => value.into_currency(CurrencyType::Amd),
+        _=> return "Error: Invalid target currency".to_string(),
     }
+
+    value.to_string()
 }
 
 #[derive(Error, Clone, Debug)]
@@ -211,7 +220,7 @@ impl Currency
         self.currency = currency;
     }
 
-    pub fn from_str(s: &str, converter: Rc<RefCell<CurrencyConverter>>) -> Result<Self, CurrencyError>
+    pub fn from_str(s: &str, converter: Rc<RefCell<CurrencyConverter>>, max_age: Duration) -> Result<Self, CurrencyError>
     {
         let mut s = s.to_lowercase();
         let currency;
@@ -264,7 +273,7 @@ impl Currency
         };
 
         // Store all currencies as USD
-        Self::refresh_exchange_rates(Rc::clone(&converter), Duration::hours(6))?;
+        Self::refresh_exchange_rates(Rc::clone(&converter), max_age)?;
 
         let exchange_rates = converter.borrow().exchange_rates;
         value = match currency {
