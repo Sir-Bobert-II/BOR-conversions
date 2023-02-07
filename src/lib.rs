@@ -17,7 +17,8 @@ fn strip_suffixes(mut input: String, suffixes: &[&str]) -> String
         {
             Some(input) => input,
             None => &input,
-        }.to_string()
+        }
+        .to_string()
     }
     input
 }

@@ -1,22 +1,30 @@
-use std::{fmt, rc::Rc, cell::RefCell};
-use thiserror::Error;
-use chrono::{DateTime, Utc, Duration};
-use serde_derive::{Serialize, Deserialize};
 use super::strip_suffixes;
+use chrono::{DateTime, Duration, Utc};
+use serde_derive::{Deserialize, Serialize};
+use std::{cell::RefCell, fmt, rc::Rc};
+use thiserror::Error;
 
 #[derive(Error, Clone, Debug)]
 pub enum CurrencyError
 {
     #[error("NumberParseError: couldn't parse number from '{input}': {message}")]
-    Parse {input: String, message: String},
+    Parse
+    {
+        input: String, message: String
+    },
 
     #[error("RequestError: couldn't request data from currency API: {message}")]
-    Request {message: String},
+    Request
+    {
+        message: String
+    },
 
     #[error("JSONParseError: couldn't parse JSON returned by currency API: {message}")]
-    JsonParse {message: String},
+    JsonParse
+    {
+        message: String
+    },
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ExchangeRatesResponse
@@ -44,7 +52,7 @@ struct ExchangeRateResponseData
     /// Armenian Dram
     AMD: ExchangeRateResponseDataInfo,
     /// Brittish Pound
-    GBP: ExchangeRateResponseDataInfo
+    GBP: ExchangeRateResponseDataInfo,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -77,14 +85,20 @@ impl ExchangeRatesResponse
         if let Ok(resp) = match reqwest::blocking::get(url)
         {
             Ok(x) => x,
-            Err(e) => return Err(CurrencyError::Request{message: format!("{e}")}),
-        }.json::<Self>()
+            Err(e) =>
+            {
+                return Err(CurrencyError::Request {
+                    message: format!("{e}"),
+                })
+            }
+        }
+        .json::<Self>()
         {
             Ok(resp)
         }
         else
         {
-            Err(CurrencyError::JsonParse{
+            Err(CurrencyError::JsonParse {
                 message: "Invalid JSON content".to_string(),
             })
         }
@@ -99,37 +113,36 @@ pub struct ExchangeRates
 
     // Euro
     eur: f64,
-    
+
     /// U.S. Dollar
     usd: f64,
-    
+
     /// Canadian Dollar
     cad: f64,
-    
+
     /// Russian Ruble
     rub: f64,
-    
+
     /// YEN
     jpy: f64,
-    
+
     /// Austrialian Dollar
     aud: f64,
-    
+
     /// Armenian Dram
     amd: f64,
-    
+
     /// Brittish Pound
     gbp: f64,
 }
 
 impl ExchangeRates
 {
-    pub fn fetch(api_key:String) -> Result<Self, CurrencyError>
+    pub fn fetch(api_key: String) -> Result<Self, CurrencyError>
     {
         let resp = ExchangeRatesResponse::fetch(api_key)?;
 
-        Ok(Self
-        {
+        Ok(Self {
             /// When the exchange rates were last fetched
             when: Utc::now(),
 
@@ -147,10 +160,9 @@ impl ExchangeRates
             aud: resp.data.AUD.value,
             /// Armenian Dram
             amd: resp.data.AMD.value,
-            
+
             gbp: resp.data.GBP.value,
         })
-
     }
 }
 
@@ -162,7 +174,7 @@ pub enum CurrencyType
 
     /// U.S. Dollar
     Usd,
-    
+
     /// Canadian Dollar
     Cad,
 
@@ -177,7 +189,7 @@ pub enum CurrencyType
 
     /// Armenian Dram
     Amd,
-    
+
     /// Brittish Pound
     Gbp,
 }
@@ -215,35 +227,42 @@ pub struct Currency
 
 impl Currency
 {
-    
-    pub fn into_currency(&mut self, currency: CurrencyType)
-    {
-        self.currency = currency;
-    }
+    pub fn into_currency(&mut self, currency: CurrencyType) { self.currency = currency; }
 
-    pub fn from_str(s: &str, converter: Rc<RefCell<CurrencyConverter>>) -> Result<Self, CurrencyError>
+    pub fn from_str(
+        s: &str,
+        converter: Rc<RefCell<CurrencyConverter>>,
+    ) -> Result<Self, CurrencyError>
     {
         let mut s = s.to_lowercase();
         let currency;
         let mut value;
-        match s {
-            _ if s.ends_with("usd") || s.ends_with("dollar") || s.starts_with('$') => {
-                
+        match s
+        {
+            _ if s.ends_with("usd") || s.ends_with("dollar") || s.starts_with('$') =>
+            {
                 s = strip_suffixes(s, &["usd", "dollar"]);
                 s = match s.strip_prefix('$')
                 {
                     Some(s) => s,
                     None => &s,
-                }.to_string();
+                }
+                .to_string();
                 currency = CurrencyType::Usd;
-            },
-            _ if s.ends_with("quid") || s.ends_with("pound") || s.ends_with("sterling")|| s.ends_with("gbp") || s.starts_with('£') => {
+            }
+            _ if s.ends_with("quid")
+                || s.ends_with("pound")
+                || s.ends_with("sterling")
+                || s.ends_with("gbp")
+                || s.starts_with('£') =>
+            {
                 s = strip_suffixes(s, &["quid", "pound", "sterling", "gbp"]);
                 s = match s.strip_prefix('£')
                 {
                     Some(s) => s,
                     None => &s,
-                }.to_string();
+                }
+                .to_string();
                 currency = CurrencyType::Gbp;
             }
             _ if s.ends_with("eur") || s.ends_with("euro") || s.starts_with('€') =>
@@ -253,32 +272,49 @@ impl Currency
                 {
                     Some(s) => s,
                     None => &s,
-                }.to_string();
+                }
+                .to_string();
                 currency = CurrencyType::Eur;
-            },
-            _ if s.ends_with("rub") || s.ends_with("ruble") => {
+            }
+            _ if s.ends_with("rub") || s.ends_with("ruble") =>
+            {
                 s = strip_suffixes(s, &["ruble", "rub"]);
                 currency = CurrencyType::Rub;
-            },
-            _ if s.ends_with("amd") || s.ends_with("dram") => {
+            }
+            _ if s.ends_with("amd") || s.ends_with("dram") =>
+            {
                 s = strip_suffixes(s, &["amd", "dram"]);
                 currency = CurrencyType::Amd;
-            },
+            }
 
-            _ if s.ends_with("cad") => {
+            _ if s.ends_with("cad") =>
+            {
                 s = strip_suffixes(s, &["cad"]);
                 currency = CurrencyType::Cad;
-            },
-            _ if s.ends_with("aud") => {
+            }
+            _ if s.ends_with("aud") =>
+            {
                 s = strip_suffixes(s, &["aud"]);
                 currency = CurrencyType::Aud;
-            },
-            _=> return Err(CurrencyError::Parse {input: s, message: "Invalid unit provided.".to_string()}),
+            }
+            _ =>
+            {
+                return Err(CurrencyError::Parse {
+                    input: s,
+                    message: "Invalid unit provided.".to_string(),
+                })
+            }
         };
 
         value = match s.trim().parse()
         {
-            Err(e) => return Err(CurrencyError::Parse {input: s, message: format!("{e}")}),
+            Err(e) =>
+            {
+                return Err(CurrencyError::Parse {
+                    input: s,
+                    message: format!("{e}"),
+                })
+            }
             Ok(v) => v,
         };
 
@@ -286,7 +322,8 @@ impl Currency
         Self::refresh_exchange_rates(Rc::clone(&converter))?;
 
         let exchange_rates = converter.borrow().exchange_rates;
-        value = value / match currency {
+        value /= match currency
+        {
             CurrencyType::Usd => exchange_rates.usd,
             CurrencyType::Eur => exchange_rates.eur,
             CurrencyType::Cad => exchange_rates.cad,
@@ -304,22 +341,23 @@ impl Currency
         })
     }
 
-    /// If the exchange rates are too old, refresh them. 
-    fn refresh_exchange_rates(converter: Rc<RefCell<CurrencyConverter>>) -> Result<(), CurrencyError>
+    /// If the exchange rates are too old, refresh them.
+    fn refresh_exchange_rates(
+        converter: Rc<RefCell<CurrencyConverter>>,
+    ) -> Result<(), CurrencyError>
     {
-        
         let now = Utc::now().time();
         let when = converter.borrow().exchange_rates.when.time();
         let max_age = converter.borrow().max_age;
         let diff = when - now;
-    
+
         if diff > max_age
         {
             let mut converter = converter.borrow_mut();
             let key = converter.api_key.clone();
             converter.exchange_rates = ExchangeRates::fetch(key)?;
         }
-        
+
         Ok(())
     }
 }
@@ -346,14 +384,14 @@ impl fmt::Display for Currency
     }
 }
 
-pub struct CurrencyConverter {
-
+pub struct CurrencyConverter
+{
     /// The exchange rates
     exchange_rates: ExchangeRates,
-    
+
     /// The api key for the currency API
     api_key: String,
-    
+
     /// The maximum valid age for the `exchange_rates` before being refreshed.
     max_age: Duration,
 }
@@ -362,15 +400,17 @@ impl CurrencyConverter
 {
     pub fn new(api_key: String, max_age: Duration) -> Result<Self, CurrencyError>
     {
-    
-        Ok(Self { exchange_rates: ExchangeRates::fetch(api_key.clone())? , api_key, max_age})
-        
+        Ok(Self {
+            exchange_rates: ExchangeRates::fetch(api_key.clone())?,
+            api_key,
+            max_age,
+        })
     }
 }
 
 pub fn run(converter: Rc<RefCell<CurrencyConverter>>, input: String, target: String) -> String
 {
-    let mut value = match Currency::from_str(&input,Rc::clone(&converter))
+    let mut value = match Currency::from_str(&input, Rc::clone(&converter))
     {
         Ok(x) => x,
         Err(e) => return e.to_string(),
@@ -385,27 +425,26 @@ pub fn run(converter: Rc<RefCell<CurrencyConverter>>, input: String, target: Str
         "cad" => CurrencyType::Cad,
         "rub" | "ruble" => CurrencyType::Rub,
         "yen" | "jpy" => CurrencyType::Jpy,
-        "aud" =>CurrencyType::Aud,
+        "aud" => CurrencyType::Aud,
         "amd" | "dram" => CurrencyType::Amd,
         "pound" | "sterling" | "quid" => CurrencyType::Gbp,
-        _=> return "Error: Invalid target currency".to_string(),
+        _ => return "Error: Invalid target currency".to_string(),
     });
 
     format!("{initial_value} -> {value}")
-   
 }
 
 #[cfg(test)]
 mod tests
 {
-    use std::rc::Rc;
-    use std::cell::RefCell;
     use super::*;
-    
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
     #[test]
     fn test_currency_to_string_usd()
     {
-        let converter = Rc::new(RefCell::new(CurrencyConverter{
+        let converter = Rc::new(RefCell::new(CurrencyConverter {
             exchange_rates: ExchangeRates {
                 when: Utc::now(),
                 eur: 0.932001,
@@ -418,18 +457,18 @@ mod tests
                 gbp: 0.831541,
             },
             api_key: "NONE".to_string(),
-            
-            max_age: Duration::hours(24)
+
+            max_age: Duration::hours(24),
         }));
-        
-        let value = Currency::from_str("40 USD" ,Rc::clone(&converter)).unwrap();
+
+        let value = Currency::from_str("40 USD", Rc::clone(&converter)).unwrap();
         assert_eq!("40.00 Dollar(s) [USD]", value.to_string())
     }
-    
+
     #[test]
     fn test_currency_to_string_convert_cad()
     {
-        let converter = Rc::new(RefCell::new(CurrencyConverter{
+        let converter = Rc::new(RefCell::new(CurrencyConverter {
             exchange_rates: ExchangeRates {
                 when: Utc::now(),
                 eur: 0.932001,
@@ -442,19 +481,19 @@ mod tests
                 gbp: 0.831541,
             },
             api_key: "NONE".to_string(),
-            
-            max_age: Duration::hours(24)
+
+            max_age: Duration::hours(24),
         }));
-        
-        let mut value = Currency::from_str("40 USD" ,Rc::clone(&converter)).unwrap();
+
+        let mut value = Currency::from_str("40 USD", Rc::clone(&converter)).unwrap();
         value.into_currency(CurrencyType::Cad);
         assert_eq!("53.77 Canadian Dollar(s) [CAD]", value.to_string())
     }
-    
+
     #[test]
     fn test_currency_to_string_convert_eur()
     {
-        let converter = Rc::new(RefCell::new(CurrencyConverter{
+        let converter = Rc::new(RefCell::new(CurrencyConverter {
             exchange_rates: ExchangeRates {
                 when: Utc::now(),
                 eur: 0.932001,
@@ -467,19 +506,19 @@ mod tests
                 gbp: 0.831541,
             },
             api_key: "NONE".to_string(),
-            
-            max_age: Duration::hours(24)
+
+            max_age: Duration::hours(24),
         }));
-        
-        let mut value = Currency::from_str("80 USD" ,Rc::clone(&converter)).unwrap();
+
+        let mut value = Currency::from_str("80 USD", Rc::clone(&converter)).unwrap();
         value.into_currency(CurrencyType::Eur);
         assert_eq!("74.56 Euro(s) [EUR]", value.to_string())
     }
-    
+
     #[test]
     fn test_currency_to_string_convert_rub()
     {
-        let converter = Rc::new(RefCell::new(CurrencyConverter{
+        let converter = Rc::new(RefCell::new(CurrencyConverter {
             exchange_rates: ExchangeRates {
                 when: Utc::now(),
                 eur: 0.932001,
@@ -492,19 +531,19 @@ mod tests
                 gbp: 0.831541,
             },
             api_key: "NONE".to_string(),
-            
-            max_age: Duration::hours(24)
+
+            max_age: Duration::hours(24),
         }));
-        
-        let mut value = Currency::from_str("45.9 USD" ,Rc::clone(&converter)).unwrap();
+
+        let mut value = Currency::from_str("45.9 USD", Rc::clone(&converter)).unwrap();
         value.into_currency(CurrencyType::Rub);
         assert_eq!("3282.31 Ruble(s) [RUB]", value.to_string())
     }
-    
+
     #[test]
     fn test_currency_to_string_convert_jpy()
     {
-        let converter = Rc::new(RefCell::new(CurrencyConverter{
+        let converter = Rc::new(RefCell::new(CurrencyConverter {
             exchange_rates: ExchangeRates {
                 when: Utc::now(),
                 eur: 0.932001,
@@ -517,19 +556,19 @@ mod tests
                 gbp: 0.831541,
             },
             api_key: "NONE".to_string(),
-            
-            max_age: Duration::hours(24)
+
+            max_age: Duration::hours(24),
         }));
-        
-        let mut value = Currency::from_str("45.9 USD" ,Rc::clone(&converter)).unwrap();
+
+        let mut value = Currency::from_str("45.9 USD", Rc::clone(&converter)).unwrap();
         value.into_currency(CurrencyType::Jpy);
         assert_eq!("6087.57 Yen [JPY]", value.to_string())
     }
-    
+
     #[test]
     fn test_currency_to_string_convert_aud()
     {
-        let converter = Rc::new(RefCell::new(CurrencyConverter{
+        let converter = Rc::new(RefCell::new(CurrencyConverter {
             exchange_rates: ExchangeRates {
                 when: Utc::now(),
                 eur: 0.932001,
@@ -542,19 +581,19 @@ mod tests
                 gbp: 0.831541,
             },
             api_key: "NONE".to_string(),
-            
-            max_age: Duration::hours(24)
+
+            max_age: Duration::hours(24),
         }));
-        
-        let mut value = Currency::from_str("45.9 USD" ,Rc::clone(&converter)).unwrap();
+
+        let mut value = Currency::from_str("45.9 USD", Rc::clone(&converter)).unwrap();
         value.into_currency(CurrencyType::Aud);
-        assert_eq!("66.64 Australian Dollar(s) [AUD]", value.to_string())
+        assert_eq!("66.64 Austriallian Dollar(s) [AUD]", value.to_string())
     }
-    
+
     #[test]
     fn test_currency_to_string_convert_amd()
     {
-        let converter = Rc::new(RefCell::new(CurrencyConverter{
+        let converter = Rc::new(RefCell::new(CurrencyConverter {
             exchange_rates: ExchangeRates {
                 when: Utc::now(),
                 eur: 0.932001,
@@ -567,19 +606,19 @@ mod tests
                 gbp: 0.831541,
             },
             api_key: "NONE".to_string(),
-            
-            max_age: Duration::hours(24)
+
+            max_age: Duration::hours(24),
         }));
-        
-        let mut value = Currency::from_str("45.9 USD" ,Rc::clone(&converter)).unwrap();
+
+        let mut value = Currency::from_str("45.9 USD", Rc::clone(&converter)).unwrap();
         value.into_currency(CurrencyType::Amd);
         assert_eq!("18204.88 Dram [AMD]", value.to_string())
     }
-    
+
     #[test]
     fn test_run_convert_all()
     {
-        let converter = Rc::new(RefCell::new(CurrencyConverter{
+        let converter = Rc::new(RefCell::new(CurrencyConverter {
             exchange_rates: ExchangeRates {
                 when: Utc::now(),
                 eur: 0.932001,
@@ -594,10 +633,38 @@ mod tests
             api_key: "NONE".to_string(),
             max_age: Duration::hours(24),
         }));
-        
-        assert_eq!(run(Rc::clone(&converter), "$45.9".to_string(), "usd".to_string()), "45.90 Dollar(s) [USD] -> 45.90 Dollar(s) [USD]".to_string());
-        assert_eq!(run(Rc::clone(&converter), "$45.9".to_string(), "dram".to_string()), "45.90 Dollar(s) [USD] -> 18204.88 Dram [AMD]".to_string());
-        assert_eq!(run(Rc::clone(&converter), "66.64 AUD".to_string(), "usd".to_string()), "66.64 Austriallian Dollar(s) [AUD] -> 45.90 Dollar(s) [USD]".to_string());
-        assert_eq!(run(Rc::clone(&converter), "45.90 USD".to_string(), "aud".to_string()), "45.90 Dollar(s) [USD] -> 66.64 Austriallian Dollar(s) [AUD]".to_string());
+
+        assert_eq!(
+            run(
+                Rc::clone(&converter),
+                "$45.9".to_string(),
+                "usd".to_string()
+            ),
+            "45.90 Dollar(s) [USD] -> 45.90 Dollar(s) [USD]".to_string()
+        );
+        assert_eq!(
+            run(
+                Rc::clone(&converter),
+                "$45.9".to_string(),
+                "dram".to_string()
+            ),
+            "45.90 Dollar(s) [USD] -> 18204.88 Dram [AMD]".to_string()
+        );
+        assert_eq!(
+            run(
+                Rc::clone(&converter),
+                "66.64 AUD".to_string(),
+                "usd".to_string()
+            ),
+            "66.64 Austriallian Dollar(s) [AUD] -> 45.90 Dollar(s) [USD]".to_string()
+        );
+        assert_eq!(
+            run(
+                Rc::clone(&converter),
+                "45.90 USD".to_string(),
+                "aud".to_string()
+            ),
+            "45.90 Dollar(s) [USD] -> 66.64 Austriallian Dollar(s) [AUD]".to_string()
+        );
     }
 }

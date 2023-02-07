@@ -1,6 +1,6 @@
+use super::strip_suffixes;
 use std::{fmt, str::FromStr};
 use thiserror::Error;
-use super::strip_suffixes;
 
 pub fn run(t: String) -> String
 {
@@ -38,7 +38,10 @@ pub struct Time
 pub enum ParseTimeError
 {
     #[error("Couldn't parse number: {number}: {message}")]
-    NumberParseError {number: String, message: String},
+    NumberParseError
+    {
+        number: String, message: String
+    },
 
     #[error("There were too many sections in the time provided")]
     TooManySections,
@@ -54,9 +57,10 @@ impl FromStr for Time
         let mut kind = TimeNotation::TwelveHour;
         let mut pm = false;
 
-        match s 
+        match s
         {
-            _ if s.ends_with("pm") => {
+            _ if s.ends_with("pm") =>
+            {
                 pm = true;
             }
             _ if s.ends_with("am") => (),
@@ -108,7 +112,10 @@ impl FromStr for Time
                         },
                         Err(e) =>
                         {
-                            return Err(Self::Err::NumberParseError{ number: section.to_string(), message: e.to_string() })
+                            return Err(Self::Err::NumberParseError {
+                                number: section.to_string(),
+                                message: e.to_string(),
+                            })
                         }
                     }
                 }
