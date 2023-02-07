@@ -1,5 +1,6 @@
 use std::{fmt, str::FromStr};
 use thiserror::Error;
+use super::strip_suffixes;
 
 pub fn run(t: String) -> String
 {
@@ -36,8 +37,8 @@ pub struct Time
 #[derive(Error, Debug)]
 pub enum ParseTimeError
 {
-    #[error("Couldn't parse number: {0}")]
-    NumberParseError(String),
+    #[error("Couldn't parse number: {number}: {message}")]
+    NumberParseError {number: String, message: String},
 
     #[error("There were too many sections in the time provided")]
     TooManySections,
@@ -50,45 +51,30 @@ impl FromStr for Time
     fn from_str(s: &str) -> Result<Self, Self::Err>
     {
         let mut s = s.to_lowercase();
-        let mut kind = TimeNotation::TwentyFourHour;
+        let mut kind = TimeNotation::TwelveHour;
         let mut pm = false;
 
-        if s.ends_with("pm")
+        match s 
         {
-            s = match s.strip_suffix("pm")
-            {
-                Some(x) =>
-                {
-                    kind = TimeNotation::TwelveHour;
-                    pm = true;
-                    x.to_string()
-                }
-                None => s,
+            _ if s.ends_with("pm") => {
+                pm = true;
             }
+            _ if s.ends_with("am") => (),
+
+            _ => kind = TimeNotation::TwentyFourHour,
         }
-        else if s.ends_with("am")
-        {
-            s = match s.strip_suffix("am")
-            {
-                Some(x) =>
-                {
-                    kind = TimeNotation::TwelveHour;
-                    x.to_string()
-                }
-                None => s,
-            }
-        }
+        s = strip_suffixes(s, &["pm", "am"]);
 
         let sections: Vec<&str> = s.split(':').collect();
         match sections.len()
         {
+            // Only allow up to three sections
             1 | 2 | 3 =>
             {
-                let mut i = 0;
                 let mut time = Self::new(kind);
-                while i < sections.len()
+                for (i, section) in sections.into_iter().enumerate()
                 {
-                    match sections[i].trim().parse()
+                    match section.trim().parse()
                     {
                         Ok(x) => match i
                         {
@@ -122,13 +108,9 @@ impl FromStr for Time
                         },
                         Err(e) =>
                         {
-                            return Err(Self::Err::NumberParseError(format!(
-                                "{e}: '{}'",
-                                sections[i].trim()
-                            )))
+                            return Err(Self::Err::NumberParseError{ number: section.to_string(), message: e.to_string() })
                         }
                     }
-                    i += 1;
                 }
                 Ok(time)
             }

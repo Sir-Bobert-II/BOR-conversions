@@ -2,7 +2,7 @@ use std::{fmt, rc::Rc, cell::RefCell};
 use thiserror::Error;
 use chrono::{DateTime, Utc, Duration};
 use serde_derive::{Serialize, Deserialize};
-use super::strip_prefix;
+use super::strip_suffixes;
 
 #[derive(Error, Clone, Debug)]
 pub enum CurrencyError
@@ -172,6 +172,25 @@ pub enum CurrencyType
     Amd,
 }
 
+impl fmt::Display for CurrencyType
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+    {
+        let s = match self
+        {
+            Self::Usd => "Dollar(s) [USD]"
+            Self::Eur => "Euro(s) [EUR]"
+            Self::Cad => "Canadian Dollar(s) [CAD]"
+            Self::Rub => "Ruble(s) [RUB]"
+            Self::Jpy => "Yen [JPY]"
+            Self::Aud => "Austriallian Dollar(s) [AUD]"
+            Self::Amd => "Dram [AMD]"
+        }
+
+        write!(f, "{s}")
+    }
+}
+
 pub struct Currency
 {
     converter: Rc<RefCell<CurrencyConverter>>,
@@ -284,24 +303,24 @@ impl Currency
     }
 }
 
-impl std::fmt::Display for Currency
+impl fmt::Display for Currency
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
     {
         // Store all currencies as USD
         let exchange_rates = self.converter.borrow().exchange_rates;
-        let (value, currency) = match self.currency
+        let value = match self.currency
         {
-            CurrencyType::Usd => (self.value, "USD"),
-            CurrencyType::Eur =>(exchange_rates.eur * self.value, "Euro (EUR)"),
-            CurrencyType::Cad => (exchange_rates.cad * self.value, "CAD"),
-            CurrencyType::Rub => (exchange_rates.rub * self.value, "Ruble (RUB)"),
-            CurrencyType::Jpy => (exchange_rates.jpy * self.value, "Yen (JPY)"),
-            CurrencyType::Aud => (exchange_rates.aud * self.value, "AUD"),
-            CurrencyType::Amd => (exchange_rates.amd * self.value, "Dram (AMD)"),
+            CurrencyType::Usd => self.value
+            CurrencyType::Eur => exchange_rates.eur * self.value
+            CurrencyType::Cad => exchange_rates.cad * self.value
+            CurrencyType::Rub => exchange_rates.rub * self.value
+            CurrencyType::Jpy => exchange_rates.jpy * self.value
+            CurrencyType::Aud => exchange_rates.aud * self.value
+            CurrencyType::Amd => exchange_rates.amd * self.value
         };
 
-        write!(f, "{value:.2} {currency}")
+        write!(f, "{value:.2} {}", self.currency)
     }
 }
 
