@@ -18,6 +18,8 @@ pub fn run(input: String, target: String, api_key: String, max_age: Duration) ->
         Err(e) => return e.to_string(),
     };
 
+    let initial_value = value.to_string();
+
     match &*target.to_lowercase()
     {
         "$" | "usd" | "dollar" => value.into_currency(CurrencyType::Usd),
@@ -30,7 +32,8 @@ pub fn run(input: String, target: String, api_key: String, max_age: Duration) ->
         _=> return "Error: Invalid target currency".to_string(),
     }
 
-    value.to_string()
+    format!("{initial_value} -> {}", value.to_string())
+   
 }
 
 #[derive(Error, Clone, Debug)]
@@ -266,7 +269,7 @@ impl Currency
             _=> return Err(CurrencyError::Parse {input: s, message: "Invalid unit provided.".to_string()}),
         };
 
-        value = match s.parse()
+        value = match s.trim().parse()
         {
             Err(e) => return Err(CurrencyError::Parse {input: s, message: format!("{e}")}),
             Ok(v) => v,
@@ -322,11 +325,11 @@ impl std::fmt::Display for Currency
         {
             CurrencyType::Usd => (self.value, "USD"),
             CurrencyType::Eur =>(exchange_rates.eur * self.value, "Euro (EUR)"),
-            CurrencyType::Cad => (exchange_rates.cad * self.value, "Cad (CAD)"),
+            CurrencyType::Cad => (exchange_rates.cad * self.value, "CAD"),
             CurrencyType::Rub => (exchange_rates.rub * self.value, "Ruble (RUB)"),
             CurrencyType::Jpy => (exchange_rates.jpy * self.value, "Yen (JPY)"),
             CurrencyType::Aud => (exchange_rates.aud * self.value, "AUD"),
-            CurrencyType::Amd => (exchange_rates.amd * self.value, "Dram (Amd)"),
+            CurrencyType::Amd => (exchange_rates.amd * self.value, "Dram (AMD)"),
         };
 
         write!(f, "{value:.2} {currency}")
@@ -343,4 +346,166 @@ impl CurrencyConverter
         Ok(Self { exchange_rates: ExchangeRates::fetch(api_key.clone())? , api_key })
         
     }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use std::rc::Rc;
+    use std::cell::RefCell;
+    use super::*;
+    
+    #[test]
+    fn test_currency_to_string_usd()
+    {
+        let converter = Rc::new(RefCell::new(CurrencyConverter{
+            exchange_rates: ExchangeRates {
+                when: Utc::now(),
+                eur: 0.932001,
+                usd: 1.0,
+                cad: 1.344352,
+                rub: 71.510096,
+                jpy: 132.626755,
+                aud: 1.451866,
+                amd: 396.62057,
+            },
+            api_key: "NONE".to_string(),
+        }));
+        
+        let value = Currency::from_str("40 USD" ,Rc::clone(&converter), Duration::hours(24)).unwrap();
+        assert_eq!("40.00 USD", value.to_string())
+    }
+    
+    #[test]
+    fn test_currency_to_string_convert_cad()
+    {
+        let converter = Rc::new(RefCell::new(CurrencyConverter{
+            exchange_rates: ExchangeRates {
+                when: Utc::now(),
+                eur: 0.932001,
+                usd: 1.0,
+                cad: 1.344352,
+                rub: 71.510096,
+                jpy: 132.626755,
+                aud: 1.451866,
+                amd: 396.62057,
+            },
+            api_key: "NONE".to_string(),
+        }));
+        
+        let mut value = Currency::from_str("40 USD" ,Rc::clone(&converter), Duration::hours(24)).unwrap();
+        value.into_currency(CurrencyType::Cad);
+        assert_eq!("53.77 CAD", value.to_string())
+    }
+    
+    #[test]
+    fn test_currency_to_string_convert_eur()
+    {
+        let converter = Rc::new(RefCell::new(CurrencyConverter{
+            exchange_rates: ExchangeRates {
+                when: Utc::now(),
+                eur: 0.932001,
+                usd: 1.0,
+                cad: 1.344352,
+                rub: 71.510096,
+                jpy: 132.626755,
+                aud: 1.451866,
+                amd: 396.62057,
+            },
+            api_key: "NONE".to_string(),
+        }));
+        
+        let mut value = Currency::from_str("70 USD" ,Rc::clone(&converter), Duration::hours(24)).unwrap();
+        value.into_currency(CurrencyType::Eur);
+        assert_eq!("65.24 Euro (EUR)", value.to_string())
+    }
+    
+    #[test]
+    fn test_currency_to_string_convert_rub()
+    {
+        let converter = Rc::new(RefCell::new(CurrencyConverter{
+            exchange_rates: ExchangeRates {
+                when: Utc::now(),
+                eur: 0.932001,
+                usd: 1.0,
+                cad: 1.344352,
+                rub: 71.510096,
+                jpy: 132.626755,
+                aud: 1.451866,
+                amd: 396.62057,
+            },
+            api_key: "NONE".to_string(),
+        }));
+        
+        let mut value = Currency::from_str("45.9 USD" ,Rc::clone(&converter), Duration::hours(24)).unwrap();
+        value.into_currency(CurrencyType::Rub);
+        assert_eq!("3282.31 Ruble (RUB)", value.to_string())
+    }
+    
+    #[test]
+    fn test_currency_to_string_convert_jpy()
+    {
+        let converter = Rc::new(RefCell::new(CurrencyConverter{
+            exchange_rates: ExchangeRates {
+                when: Utc::now(),
+                eur: 0.932001,
+                usd: 1.0,
+                cad: 1.344352,
+                rub: 71.510096,
+                jpy: 132.626755,
+                aud: 1.451866,
+                amd: 396.62057,
+            },
+            api_key: "NONE".to_string(),
+        }));
+        
+        let mut value = Currency::from_str("45.9 USD" ,Rc::clone(&converter), Duration::hours(24)).unwrap();
+        value.into_currency(CurrencyType::Jpy);
+        assert_eq!("6087.57 Yen (JPY)", value.to_string())
+    }
+    
+    #[test]
+    fn test_currency_to_string_convert_aud()
+    {
+        let converter = Rc::new(RefCell::new(CurrencyConverter{
+            exchange_rates: ExchangeRates {
+                when: Utc::now(),
+                eur: 0.932001,
+                usd: 1.0,
+                cad: 1.344352,
+                rub: 71.510096,
+                jpy: 132.626755,
+                aud: 1.451866,
+                amd: 396.62057,
+            },
+            api_key: "NONE".to_string(),
+        }));
+        
+        let mut value = Currency::from_str("45.9 USD" ,Rc::clone(&converter), Duration::hours(24)).unwrap();
+        value.into_currency(CurrencyType::Aud);
+        assert_eq!("66.64 AUD", value.to_string())
+    }
+    
+    #[test]
+    fn test_currency_to_string_convert_amd()
+    {
+        let converter = Rc::new(RefCell::new(CurrencyConverter{
+            exchange_rates: ExchangeRates {
+                when: Utc::now(),
+                eur: 0.932001,
+                usd: 1.0,
+                cad: 1.344352,
+                rub: 71.510096,
+                jpy: 132.626755,
+                aud: 1.451866,
+                amd: 396.62057,
+            },
+            api_key: "NONE".to_string(),
+        }));
+        
+        let mut value = Currency::from_str("45.9 USD" ,Rc::clone(&converter), Duration::hours(24)).unwrap();
+        value.into_currency(CurrencyType::Amd);
+        assert_eq!("18204.88 Dram (AMD)", value.to_string())
+    }
+    
 }
