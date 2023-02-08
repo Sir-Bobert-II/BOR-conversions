@@ -407,12 +407,16 @@ impl CurrencyConverter
     }
 }
 
-pub fn run(converter: CurrencyConverter, input: String, target: String) -> String
+pub fn run(
+    converter: CurrencyConverter,
+    input: String,
+    target: String,
+) -> (String, CurrencyConverter)
 {
-    let mut value = match Currency::from_str(&input, converter)
+    let mut value = match Currency::from_str(&input, converter.clone())
     {
         Ok(x) => x,
-        Err(e) => return e.to_string(),
+        Err(e) => return (e.to_string(), converter),
     };
 
     let initial_value = value.to_string();
@@ -427,10 +431,10 @@ pub fn run(converter: CurrencyConverter, input: String, target: String) -> Strin
         "aud" => CurrencyType::Aud,
         "amd" | "dram" => CurrencyType::Amd,
         "pound" | "sterling" | "quid" => CurrencyType::Gbp,
-        _ => return "Error: Invalid target currency".to_string(),
+        _ => return ("Error: Invalid target currency".to_string(), converter),
     });
 
-    format!("{initial_value} -> {value}")
+    (format!("{initial_value} -> {value}"), value.get_converter())
 }
 
 #[cfg(test)]
@@ -632,11 +636,11 @@ mod tests
         };
 
         assert_eq!(
-            run(converter.clone(), "$45.9".to_string(), "usd".to_string()),
+            run(converter.clone(), "$45.9".to_string(), "usd".to_string()).0,
             "45.90 Dollar(s) [USD] -> 45.90 Dollar(s) [USD]".to_string()
         );
         assert_eq!(
-            run(converter.clone(), "$45.9".to_string(), "dram".to_string()),
+            run(converter.clone(), "$45.9".to_string(), "dram".to_string()).0,
             "45.90 Dollar(s) [USD] -> 18204.88 Dram [AMD]".to_string()
         );
         assert_eq!(
@@ -644,11 +648,12 @@ mod tests
                 converter.clone(),
                 "66.64 AUD".to_string(),
                 "usd".to_string()
-            ),
+            )
+            .0,
             "66.64 Austriallian Dollar(s) [AUD] -> 45.90 Dollar(s) [USD]".to_string()
         );
         assert_eq!(
-            run(converter, "45.90 USD".to_string(), "aud".to_string()),
+            run(converter, "45.90 USD".to_string(), "aud".to_string()).0,
             "45.90 Dollar(s) [USD] -> 66.64 Austriallian Dollar(s) [AUD]".to_string()
         );
     }
