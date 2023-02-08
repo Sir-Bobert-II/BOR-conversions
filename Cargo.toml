@@ -12,5 +12,6 @@ chrono = {version = "0.4", features = ["serde"]}
 thiserror = "1.0.38"
 lazy_static = "1.4.0"
 serde_derive = "1.0.152"
-serde ="1.0.152"
+serde = "1.0.152"
 reqwest = {version = "0.11.14", features = ["blocking"]}
+help = { git="https://github.com/Sir-Bobert-II/BOR-extra", rev ="f31f85bc48c6b90a5f19facfcf7ea561a959374a" }

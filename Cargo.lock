@@ -82,6 +82,7 @@ name = "bor_conversions"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "help",
  "lazy_static",
  "reqwest",
  "serde",
@@ -425,6 +426,11 @@ name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
+
+[[package]]
+name = "help"
+version = "0.1.0"
+source = "git+https://github.com/Sir-Bobert-II/BOR-extra?rev=f31f85bc48c6b90a5f19facfcf7ea561a959374a#f31f85bc48c6b90a5f19facfcf7ea561a959374a"
 
 [[package]]
 name = "hermit-abi"
