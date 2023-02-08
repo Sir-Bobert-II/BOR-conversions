@@ -51,6 +51,26 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
         })
         .create_option(|option| {
             option
+                .name("currency")
+                .kind(CommandOptionType::SubCommand)
+                .description("Convert from one currency to another.")
+                .create_sub_option(|option| {
+                    option
+                        .name("input")
+                        .description("The input currency (e.g. '$74', '80.90 CAD', '20 quid').")
+                        .kind(CommandOptionType::String)
+                        .required(true)
+                })
+                .create_sub_option(|option| {
+                    option
+                        .name("target")
+                        .description("The currency to convert to. (e.g 'rubles', 'usd', 'yen').")
+                        .kind(CommandOptionType::String)
+                        .required(true)
+                })
+        })
+        .create_option(|option| {
+            option
                 .name("hours")
                 .kind(CommandOptionType::SubCommand)
                 .description("Some people don't know how to subtract by '12'.")
