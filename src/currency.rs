@@ -296,6 +296,17 @@ impl Currency
                 s = strip_suffixes(s, &["aud"]);
                 currency = CurrencyType::Aud;
             }
+            _ if s.ends_with("yen") || s.ends_with("jpy") || s.starts_with('¥')=>
+            {
+                s = strip_suffixes(s, &["yen", "jpy"]);
+                s = match s.strip_prefix('¥')
+                {
+                    Some(s) => s,
+                    None => &s,
+                }
+                .to_string();
+                currency = CurrencyType::Jpy;
+            }
             _ =>
             {
                 return Err(CurrencyError::Parse {
@@ -427,7 +438,7 @@ pub fn run(
         "€" | "eur" | "euro" => CurrencyType::Eur,
         "cad" => CurrencyType::Cad,
         "rub" | "ruble" => CurrencyType::Rub,
-        "yen" | "jpy" => CurrencyType::Jpy,
+        "¥" | "yen" | "jpy" => CurrencyType::Jpy,
         "aud" => CurrencyType::Aud,
         "amd" | "dram" => CurrencyType::Amd,
         "pound" | "sterling" | "quid" => CurrencyType::Gbp,
