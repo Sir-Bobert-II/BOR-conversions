@@ -251,11 +251,12 @@ impl Currency
             }
             _ if s.ends_with("quid")
                 || s.ends_with("pound")
+                || s.ends_with("pounds")
                 || s.ends_with("sterling")
                 || s.ends_with("gbp")
                 || s.starts_with('£') =>
             {
-                s = strip_suffixes(s, &["quid", "pound", "sterling", "gbp"]);
+                s = strip_suffixes(s, &["quid", "pound", "pounds", "sterling", "gbp"]);
                 s = match s.strip_prefix('£')
                 {
                     Some(s) => s,
