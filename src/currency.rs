@@ -296,7 +296,7 @@ impl Currency
                 s = strip_suffixes(s, &["aud"]);
                 currency = CurrencyType::Aud;
             }
-            _ if s.ends_with("yen") || s.ends_with("jpy") || s.starts_with('¥')=>
+            _ if s.ends_with("yen") || s.ends_with("jpy") || s.starts_with('¥') =>
             {
                 s = strip_suffixes(s, &["yen", "jpy"]);
                 s = match s.strip_prefix('¥')
