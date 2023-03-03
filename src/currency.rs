@@ -53,6 +53,8 @@ struct ExchangeRateResponseData
     AMD: ExchangeRateResponseDataInfo,
     /// Brittish Pound
     GBP: ExchangeRateResponseDataInfo,
+    /// Pakistani rupee
+    PKR: ExchangeRateResponseDataInfo,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -78,7 +80,7 @@ impl ExchangeRatesResponse
     {
         // Construct request URL
         let url = format!(
-            "https://api.currencyapi.com/v3/latest?apikey={api_key}&currencies=EUR%2CUSD%2CCAD%2CRUB%2CJPY%2CAUD%2CAMD%2CGBP",
+            "https://api.currencyapi.com/v3/latest?apikey={api_key}&currencies=EUR%2CUSD%2CCAD%2CRUB%2CJPY%2CAUD%2CAMD%2CGBP%2CPKR",
         );
 
         // Get the response
@@ -134,6 +136,9 @@ pub struct ExchangeRates
 
     /// Brittish Pound
     gbp: f64,
+
+    /// Pakistani rupee
+    pkr: f64,
 }
 
 impl ExchangeRates
@@ -160,8 +165,10 @@ impl ExchangeRates
             aud: resp.data.AUD.value,
             /// Armenian Dram
             amd: resp.data.AMD.value,
-
+            /// Brittish Pound
             gbp: resp.data.GBP.value,
+            // Pakistani rupee
+            pkr: resp.data.PKR.value,
         })
     }
 }
@@ -192,6 +199,9 @@ pub enum CurrencyType
 
     /// Brittish Pound
     Gbp,
+
+    /// Pakistani rupee
+    Pkr,
 }
 
 impl fmt::Display for CurrencyType
@@ -208,6 +218,7 @@ impl fmt::Display for CurrencyType
             Self::Aud => "Austriallian Dollar(s) [AUD]",
             Self::Amd => "Dram [AMD]",
             Self::Gbp => "Brittish Pound(s) [GBP]",
+            Self::Pkr => "Pakistani rupee(s) [PKR]",
         };
 
         write!(f, "{s}")
@@ -308,6 +319,11 @@ impl Currency
                 .to_string();
                 currency = CurrencyType::Jpy;
             }
+            _ if s.ends_with("pkr") || s.ends_with("pakistani rupee") =>
+            {
+                s = strip_suffixes(s, &["pkr", "pakistani rupee"]);
+                currency = CurrencyType::Pkr;
+            }
             _ =>
             {
                 return Err(CurrencyError::Parse {
@@ -343,6 +359,7 @@ impl Currency
             CurrencyType::Aud => exchange_rates.aud,
             CurrencyType::Amd => exchange_rates.amd,
             CurrencyType::Gbp => exchange_rates.gbp,
+            CurrencyType::Pkr => exchange_rates.pkr,
         };
 
         Ok(Currency {
@@ -388,6 +405,7 @@ impl fmt::Display for Currency
             CurrencyType::Aud => exchange_rates.aud,
             CurrencyType::Amd => exchange_rates.amd,
             CurrencyType::Gbp => exchange_rates.gbp,
+            CurrencyType::Pkr => exchange_rates.pkr,
         } * self.value;
 
         write!(f, "{value:.2} {}", self.currency)
@@ -433,7 +451,7 @@ pub fn run(
 
     let initial_value = value.to_string();
 
-    value.into_currency(match &*target.to_lowercase()
+    value.into_currency(match &*target.trim().to_lowercase()
     {
         "$" | "usd" | "dollar" => CurrencyType::Usd,
         "€" | "eur" | "euro" => CurrencyType::Eur,
@@ -443,6 +461,7 @@ pub fn run(
         "aud" => CurrencyType::Aud,
         "amd" | "dram" => CurrencyType::Amd,
         "pound" | "sterling" | "quid" => CurrencyType::Gbp,
+        "pakistani rupee" | "pkr" => CurrencyType::Pkr,
         _ => return ("Error: Invalid target currency".to_string(), converter),
     });
 
@@ -468,6 +487,7 @@ mod tests
                 aud: 1.451866,
                 amd: 396.62057,
                 gbp: 0.831541,
+                pkr: 281.850466,
             },
             api_key: "NONE".to_string(),
 
@@ -492,6 +512,7 @@ mod tests
                 aud: 1.451866,
                 amd: 396.62057,
                 gbp: 0.831541,
+                pkr: 281.850466,
             },
             api_key: "NONE".to_string(),
 
@@ -517,6 +538,7 @@ mod tests
                 aud: 1.451866,
                 amd: 396.62057,
                 gbp: 0.831541,
+                pkr: 281.850466,
             },
             api_key: "NONE".to_string(),
 
@@ -542,6 +564,7 @@ mod tests
                 aud: 1.451866,
                 amd: 396.62057,
                 gbp: 0.831541,
+                pkr: 281.850466,
             },
             api_key: "NONE".to_string(),
 
@@ -567,6 +590,7 @@ mod tests
                 aud: 1.451866,
                 amd: 396.62057,
                 gbp: 0.831541,
+                pkr: 281.850466,
             },
             api_key: "NONE".to_string(),
 
@@ -592,6 +616,7 @@ mod tests
                 aud: 1.451866,
                 amd: 396.62057,
                 gbp: 0.831541,
+                pkr: 281.850466,
             },
             api_key: "NONE".to_string(),
 
@@ -617,6 +642,7 @@ mod tests
                 aud: 1.451866,
                 amd: 396.62057,
                 gbp: 0.831541,
+                pkr: 281.850466,
             },
             api_key: "NONE".to_string(),
 
@@ -642,6 +668,7 @@ mod tests
                 aud: 1.451866,
                 amd: 396.62057,
                 gbp: 0.831541,
+                pkr: 281.850466,
             },
             api_key: "NONE".to_string(),
             max_age: Duration::hours(24),
@@ -665,8 +692,18 @@ mod tests
             "66.64 Austriallian Dollar(s) [AUD] -> 45.90 Dollar(s) [USD]".to_string()
         );
         assert_eq!(
-            run(converter, "45.90 USD".to_string(), "aud".to_string()).0,
+            run(
+                converter.clone(),
+                "45.90 USD".to_string(),
+                "aud".to_string()
+            )
+            .0,
             "45.90 Dollar(s) [USD] -> 66.64 Austriallian Dollar(s) [AUD]".to_string()
         );
+
+        assert_eq!(
+            run(converter.clone(), "$45".to_string(), "pkr".to_string()).0,
+            "45.00 Dollar(s) [USD] -> 12683.27 Pakistani rupee(s) [PKR]".to_string()
+        )
     }
 }
